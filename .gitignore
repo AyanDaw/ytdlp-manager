@@ -1,0 +1,5 @@
+# Ignore database files
+*.db
+
+# Ignore specific folder
+modules/__pycache__/
