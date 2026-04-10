@@ -2,7 +2,7 @@
 
 A terminal-based personal download manager built around `yt-dlp`, with user accounts, bucket list, history tracking, and portable data.
 ---
-[![Last Commit](https://img.shields.io/github/last-commit/AyanDaw/My-LeetCode-Problems)]()
+[![Last Commit](https://img.shields.io/github/last-commit/AyanDaw/ytdlp-manager)]()
 ---
 
 ## What This Is
