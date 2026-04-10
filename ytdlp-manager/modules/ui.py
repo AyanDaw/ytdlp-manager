@@ -1,6 +1,6 @@
 import time
 from modules import display, auth
-
+import sys
 
 def splash():
     display.clear_screen()
@@ -23,7 +23,8 @@ def home():
         print("="*10, "HOME", "="*10)
         print("1. LOGIN - Move to Login Page!")
         print("2. PORTER - Import/Export your Data!")
-        print("3. EXIT - Exit the app... :( ")
+        print("3. UPDATER - Will check for any available updates!") # Later make the downloading automatic at the start and remove this section, if update available then ask.
+        print("0. EXIT - Exit the app... :( ")
 
         try:
             option = int(input("Enter your option:> "))
@@ -33,12 +34,24 @@ def home():
             continue
 
         match option:
+            case 0:
+                # This is to exit the app
+                display.clear_screen()
+                display.display_logo()
+                print("\nHave a good day!... :)")
+                sys.exit()
+            
             case 1: 
-                ...
+                # This is for login ask()
+                display.loading_animation(message= "Moving to the login page...", duration= 1)
+                return "login"
+            
             case 2:
-                ...
+                # This is for Import/Export option
+                return "porter"
             case 3:
-                ...
+                # This is to update the app
+                return "updater"
             case _:
                 print("Invalid option, try again")
                 continue
@@ -113,6 +126,7 @@ def guest():
 def menu(user):
     if user[1] == "Logged User":
         menu_logged_user(user= user)
+        return
     elif user[1] == "Guest User":
         menu_guest(user= user)
     else:
@@ -138,11 +152,21 @@ def menu_logged_user(user):
             continue
 
         match option:
+            case 0:
+                return
+                # This is for Logout cum homescreen option
+                ...
             case 1: 
+                # This is for download
                 ...
             case 2:
+                # This is for bucker list
                 ...
             case 3:
+                # This is for history
+                ...
+            case 4:
+                # This is for settings
                 ...
             case _:
                 print("Invalid option, try again")
@@ -155,7 +179,7 @@ def menu_guest(user):
         print(f"Hello! Welcome, {user[0]}")
         print("* MAIN MENU FOR GUEST", "="*15)
         print("1. Download") # Takes to the download page, anonomously
-        print("0. Exit to Login") # Takes to Login (But confused how to do it cause it will make a stack of calls if i call login_ask() here as return)
+        print("0. Logout to Register") # Takes to Login (But confused how to do it cause it will make a stack of calls if i call login_ask() here as return)
 
         try:
             option = int(input("Enter your option:> "))
@@ -166,12 +190,14 @@ def menu_guest(user):
 
         match option:
             case 0: 
-                ...
+                # This is to logout as a guest
+                return
             case 1:
+                # This is for downloader
                 ...
             case _:
                 print("Invalid option, try again")
                 continue
 
-if __name__ == "__main__":
-    splash()
+# if __name__ == "__main__":
+#     ...

@@ -2,4 +2,5 @@
 *.db
 
 # Ignore specific folder
-modules/__pycache__/
+ytdlp-manager/modules/__pycache__/
+ytdlp-manager/__pycache__/

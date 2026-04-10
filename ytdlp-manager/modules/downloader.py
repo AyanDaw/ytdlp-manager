@@ -1,0 +1,3 @@
+...
+# if user = "GUEST" skip all data based works like profiles
+# For only youtube video and watchlist is available not for other platforms
