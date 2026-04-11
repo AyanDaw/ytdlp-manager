@@ -1,5 +1,7 @@
 import os
 import time
+from tabulate import tabulate
+
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -46,6 +48,10 @@ def loading_animation(message: str, duration: float) -> None:
         i = i + 1
         time.sleep(frame_delay)
     print(message, " Done!")
+
+    
+def display_formats_table(formats):
+    print(tabulate(formats, headers="keys", tablefmt='simple'))
 
 if __name__ == "__main__":
     print("Hello this is display!")

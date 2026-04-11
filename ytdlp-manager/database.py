@@ -71,6 +71,32 @@ def initialize_db():
             """
         )
 
+        cursor.execute(
+            """
+                CREATE TABLE IF NOT EXISTS profiles(
+                    id              INTEGER     PRIMARY KEY AUTOINCREMENT,
+                    user_id         INTEGER     NOT NULL,
+                    name            TEXT        NOT NULL,
+                    format          TEXT        NOT NULL,
+                    quality         TEXT        NOT NULL,
+                    download_folder TEXT        NOT NULL
+                )
+            """
+        )
+
+        cursor.execute(
+            """
+                CREATE TABLE IF NOT EXISTS queue(
+                    id              INTEGER     PRIMARY KEY AUTOINCREMENT,
+                    user_id         INTEGER     NOT NULL,
+                    url             TEXT        NOT NULL,
+                    profile_id      INTEGER,
+                    position        INTEGER     NOT NULL,
+                    status          TEXT        DEFAULT 'pending'
+                )
+            """
+        )
+        
         db.commit()
 
 def get_user(username: str):
