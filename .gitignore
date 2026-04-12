@@ -1,6 +1,8 @@
 # Ignore database files
 *.db
+*.mp4
 
 # Ignore specific folder
 ytdlp-manager/modules/__pycache__/
 ytdlp-manager/__pycache__/
+ytdlp-manager/Downloads
