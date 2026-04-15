@@ -14,7 +14,7 @@ def display_logo() -> None:
     │  │  │_   _│    ╲│  │  │  _  │___│     │  _  │   │ │  _  │   __│   __│ __  │      
     │_   _│ │ │ │  │  │  │__│   __│___│ │ │ │     │ │ │ │     │  │  │   __│    ─│      
       │_│   │_│ │____╱│_____│__│      │_│_│_│__│__│_│___│__│__│_____│_____│__│__│       
-                                                                      version 1.1          
+                                                                      version 0.55          
 =====================================================================================
 """
             )
@@ -53,8 +53,27 @@ def loading_animation(message: str, duration: float) -> None:
 def display_formats_table(formats):
     print(tabulate(formats, headers="keys", tablefmt='simple'))
 
+
+"""
+    options = {
+        '1': 'Menu Option 1',
+        '2': 'Menu Option 2',
+        '3': 'Menu Option 3',
+        '4': 'Menu Option 4',
+        '0': 'Back'
+    }
+
+    follow the above mentioned dict structure to use print_menu module
+"""
+
+def print_menu(title: str, options: dict):
+    print(title)
+    for key, value in options.items():
+        if key != '0':
+            print(f"{key}. {value}")
+    if '0' in options:
+        print(f"0. {options['0']}")
+
 if __name__ == "__main__":
-    print("Hello this is display!")
-    time.sleep(1)
     clear_screen()
-    loading_animation(message="Load Animation Testing...", duration=20)
+    

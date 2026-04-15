@@ -1,13 +1,29 @@
 import yt_dlp
 import display
+# from modules import display
 from pathlib import Path
 
-
-DOWNLOAD_DIR = Path(__file__).parent.parent / 'Downloads'
+username = "username" # For now as placeholder
+DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / f'{username}' /'Downloads'
 
 
 # Data Simplifications
 def simplify_resolution(resolution: str) -> str:
+
+    # siplified = {
+    #     "audio only" : resolution,
+    #     "256x144" : "144P",
+    #     "426x240" : "240P",
+    #     "640x360" : "360P",
+    #     "854x480" : "480P (SD)",
+    #     "1280x720": "720P (HD)",
+    #     "1920x1080": "1080P (FHD)",
+    #     "2560x1440": "1440P (QHD)",
+    #     "3840x2160": "2160P (4K)",
+    #     "7680x4320": "4320P (8K)"
+
+    # }
+
     match resolution:
         case "audio only":
             return "audio only"
@@ -61,6 +77,8 @@ def format_filesize(bytes: int) -> str:
     elif bytes >= 1024:
         kb = bytes/1024
         return f"~ {kb:.2f} KB"
+    else:
+        return f"~ {bytes} Bytes"
 
 
 
@@ -118,8 +136,7 @@ def parse_formats(formats):
 def download(url, format_id, download_folder):
     ydl_opts = {
     'format': format_id,
-    # 'outtmpl': f'{download_folder}/video.%(ext)s',
-    'outtmpl': str(DOWNLOAD_DIR / "%(title)s.%(ext)s"),
+    'outtmpl': str(Path(download_folder) / "%(title)s.%(ext)s"),
     'quiet': True,
     'noprogress' : True,
     'progress_hooks': [progress_hook]

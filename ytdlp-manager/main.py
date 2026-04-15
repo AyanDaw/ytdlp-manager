@@ -13,6 +13,9 @@ def main():
         action = ui.home()
         if action == "login":
             user = ui.login_ask() # Gets the current user and mode of user. Logged user or Guest. (username, mode)
+            if user == None:
+                input("Press \'Enter\' to return to HOME...")
+                continue
             ui.menu(user=user) 
             user = None
             print("Logout successfull!")
