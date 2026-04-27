@@ -1,6 +1,9 @@
 # Ignore database files
 *.db
 *.mp4
+Future_enhancements.txt
+tempCodeRunnerFile.py
+
 
 # Ignore specific folder
 ytdlp-manager/modules/__pycache__/

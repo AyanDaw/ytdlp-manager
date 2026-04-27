@@ -78,8 +78,7 @@ def initialize_db():
                     user_id         INTEGER     NOT NULL,
                     name            TEXT        NOT NULL,
                     format          TEXT        NOT NULL,
-                    quality         TEXT        NOT NULL,
-                    download_folder TEXT        NOT NULL
+                    merge_format    TEXT        DEFAULT 'mp4'
                 )
             """
         )
@@ -98,6 +97,9 @@ def initialize_db():
         )
         
         db.commit()
+
+
+# ____________used by auth.py__________________________
 
 def get_user(username: str):
     with sqlite3.connect(DB_PATH) as db:
@@ -124,11 +126,69 @@ def create_user(username, hashed_password):
             cursor = db.cursor()
             cursor.execute("INSERT INTO users_table (username, password) VALUES (?, ?)", (username, hashed_password,))
             db.commit()
-            return "Registration Successful!"
+            return (True, "Registration Successful!")
     except sqlite3.IntegrityError:
-        return "Username already taken"
+        return (False, "Username already taken")
     except Exception as e:
-        return f"Something went wrong: {e}"
+        return (False, f"Something went wrong: {e}")
+    
+
+# ____________used by ui.py for PRESETS______________________
+def get_profiles(username: str) -> dict:
+    with sqlite3.connect(DB_PATH) as db:
+        cursor = db.cursor()
+        cursor.execute(
+            """
+            SELECT profiles.*
+            FROM profiles
+            JOIN users_table ON profiles.user_id = users_table.id
+            WHERE users_table.username = ?
+            """,
+            (username,)
+        )
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+
+        """
+            cursor.fetchall() returns a list of tuples and every tuple looks like this:
+            (id, user_id, name, format, merge_format)
+             0    1        2     3       4     
+        
+            After any cursor.execute(), SQLite stores metadata about the columns in cursor.description. It looks like this:
+            cursor.description = (
+                ('id', None, None, None, None, None, None),
+                ('user_id', None, None, None, None, None, None),
+                ('name', None, None, None, None, None, None),
+                ('format', None, None, None, None, None, None),
+                ('merge_format', None, None, None, None, None, None),
+            )
+
+            Each tuple's first element [0] is the column name. So:
+            columns = [desc[0] for desc in cursor.description]
+            # Result: ['id', 'user_id', 'name', 'format', 'merge_format']
+    
+            dict(zip(columns, row)) = {
+                'id': 1,
+                'user_id': 1,
+                'name': 'My Preset',
+                'format': 'bestvideo+bestaudio/best',
+                'merge_format': 'mp4'
+            }
+            # Gives the dict format
+        """
+
+        profiles = {}
+        for row in rows:
+            row_dict = dict(zip(columns, row))
+            profiles[row_dict['name']] = row_dict
+        return profiles
+
+
+def get_settings_data(username):
+    # TODO: fetch from settings when settings module is built
+    user_setting = None
+    return None # For now
+    ...
 
 if __name__ == "__main__":
     initialize_db()

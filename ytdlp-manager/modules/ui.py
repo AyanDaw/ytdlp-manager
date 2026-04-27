@@ -1,7 +1,11 @@
 import time
-from modules import display, auth
+from pathlib import Path
+from modules import display, auth, downloader
+import database
 import sys
 
+FILE_DIR = Path(__file__).parent # ytdlp-manager/modules
+BASE_DIR = FILE_DIR.parent # ytdlp-manager
 
 #___________HOME & SPLASH SCREENS______________________
 # main() -> splash() -> main() -> home()
@@ -303,7 +307,7 @@ def menu(user):
 def download_menu(user):
 
     """
-        This fn. do differentciate according to user and their types.
+        This fn. do DIFFERENTIATE users according to their types.
         Guest users will have the minimalist options.
         User will have all the options, dynamically for presets in the menu
         User will choose from the menu.
@@ -352,9 +356,63 @@ def download_menu(user):
         func(user)  # call the function 
 
 
+
+# -> download_menu(Decision: Quick Download) -> quick_download(user)
+# -> user picks preset -> downloader.download() -> returns result
+# Function Code Status: Complete Till Now
 def quick_download(user):
-    input("Hi This is Quick Download page")
-    ...
+
+    """
+        Shows combined preset menu (built-in presets + user saved profiles).
+        User picks a preset, enters URL, chooses download path.
+        Hands off to downloader.download() with the full profile dict.
+        Does NOT ask format questions — preset handles all format decisions.
+        Guest users see only built-in presets (no saved profiles).
+        Logged users see built-ins + their saved profiles merged together.
+    """
+
+    options = presets_loader(user)
+    
+    display_options = {}
+    key_map = {}  # maps display number to options key
+    i = 1
+    for key in options:
+        display_options[str(i)] = options[key]['name']
+        key_map[str(i)] = key  # store actual key
+        i += 1
+    display_options['0'] = 'Back'
+
+    while True:
+        display.clear_screen()
+        display.display_logo()
+
+        title = "* QUICK DOWNLOAD"+"="*15
+
+        display.print_menu(title=title, options=display_options)
+        choice = input("Enter your option:> ").strip()
+            
+        if choice not in display_options:
+            print("Invalid option, try again")
+            input()
+            continue
+
+        if choice == '0':
+            return
+        
+
+        url = input("Enter url of the video/playlist : ")
+
+        selected_key = key_map[choice]
+        download_format = options[selected_key]
+        # Nothing goes except a dict having format, mergeformat, name. the key doesnt got with it.
+
+        download_path = get_download_path(user)
+
+        result = downloader.download(url= url, profile= download_format, download_folder= download_path)
+
+        print(result[1])  # show "Download successful" or error message
+        input("Press Enter to continue...")
+        # now loop refreshes
 
 
 def custom_download(user):
@@ -362,13 +420,102 @@ def custom_download(user):
     ...
 
 
-def load_presets(user) -> dict:
-    # talks to the database.py and returns presets name
-    # This is a tool not a page
-    ...
+
+# Tool function — not a page
+# Called by: quick_download(user), custom_download(user), any download screen
+# Returns: merged dict of built-in presets + user saved profiles
+# Guest users only get built-in presets (get_profiles returns empty dict for guest)
+def presets_loader(user) -> dict:
+
+    """
+        Combines built-in presets from downloader.py with user's saved profiles
+        from the database into a single unified dict.
+        Both built-ins and user profiles share the same dict structure:
+        { 'name': ..., 'format': ..., 'merge_format': ... }
+        so downstream code handles both identically.
+        Built-ins always appear first, user profiles appended after.
+    """
+
+    default_presets = downloader.BUILTIN_PRESETS
+    user_profiles = database.get_profiles(user[0])
+    profiles = default_presets | user_profiles
+
+    return profiles
+
+
+
+# Tool function — not a page
+# Called by: quick_download(user), custom_download(user), any download screen
+# Returns: validated download path string
+# Priority: user input → user saved setting → system default
+def get_download_path(user):
+    
+    """
+        Determines where to save the downloaded file.
+        Fallback chain (highest to lowest priority):
+            1. Path entered by user right now
+            2. User's saved default path from settings (database)
+            3. System default: project/Downloads/username/
+        Guest users skip input and go straight to system default.
+        Creates the system default directory if it doesn't exist yet.
+        Validates user-entered paths before accepting them.
+    """
+    
+    DEF_DOWN_DIR = BASE_DIR / 'Downloads' / user[0] # Default download directory
+    def_down_dir = str(DEF_DOWN_DIR) # Default download directory in str type
+    DEF_DOWN_DIR.mkdir(parents=True, exist_ok=True)
+    if user[1] == "Guest User":
+        return def_down_dir  # program default
+
+    print("Press \'Enter\' to leave the download path as default in your settings")
+    print("Note: To add a default path please visit the settings!")
+    print(f"If the download path is not set then the Downloaded Items will be saved in {def_down_dir}")
+    
+    
+        
+    download_path = (input("Enter your download path (Leave empty to choose the default path): ")).strip()
+    
+    if download_path != "":
+        try:
+            ensure_directory(download_path)
+            return download_path
+        except (PermissionError, ValueError, OSError) as e:
+            print(f"Invalid path: {e}")    
+            download_path = database.get_settings_data(username= user[0])
+            if download_path is not None:
+                print(f"Using User default: {download_path}")
+                input("Press Enter to continue...")
+                return download_path
+            else:
+                print(f"Using system default: {def_down_dir}")
+                input("Press Enter to continue...")
+                return def_down_dir
+    else:
+        saved_path = database.get_settings_data(username=user[0])
+        if saved_path is not None:
+            return saved_path
+        return def_down_dir
+    
+def ensure_directory(path_input: str) -> Path:
+        path = Path(path_input).expanduser()
+
+        try:
+            if path.exists():
+                if not path.is_dir():
+                    raise ValueError(f"Path exists but is not a directory: {path}")
+            else:
+                path.mkdir(parents= True, exist_ok=False)
+
+            return path
+        except PermissionError:
+            raise PermissionError(f"No permission to create/access: {path}")
+        except OSError as e:
+            raise OSError(f"Invalid or restricted path: {path}\n{e}")
 
 def create_presets(user):
     input("Hi this is create presets page")
+    # call format string before saving
+    #TODO: When creating a profile, block names that match built-in keys — add a check later.
     ...
 
 def delete_presets(user):
@@ -381,6 +528,7 @@ def rename_presets(user):
 
 def edit_presets(user):
     input("Hi this is edit presets page")
+    # thinking to create a common editor for database called by every editing tasks
     ...
 
 

@@ -1,14 +1,93 @@
 import yt_dlp
-import display
+# import display
 # from modules import display
 from pathlib import Path
 
-username = "username" # For now as placeholder
-DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / f'{username}' /'Downloads'
+
+
+DOWNLOAD_DIR = Path(__file__).resolve().parent.parent /'Downloads'
+
+BUILTIN_PRESETS = {
+    'best': {
+        'name': 'Best Quality',
+        'format': 'bestvideo+bestaudio/best',
+        'merge_format': 'mp4'
+    },
+    'audio': {
+        'name': 'Audio Only',
+        'format': 'bestaudio/best',
+        'merge_format': 'mp3'
+    },
+    'lightweight': {
+        'name': 'Lightweight (720p)',
+        'format': 'bestvideo[height<=720]+bestaudio/best',
+        'merge_format': 'mp4'
+    }
+}
+
+RESOLUTION_TO_HEIGHT = {
+    'audio only': None,
+    '144p':  144,
+    '240p':  240,
+    '360p':  360,
+    '480p':  480,
+    '720p':  720,
+    '1080p': 1080,
+    '1440p': 1440,
+    '2160p': 2160,
+    '4320p': 4320
+    }
+
+CODEC_TO_YTDLP = {
+    'H.264':         'avc1',
+    'H.265':         'hev1',
+    'AV1':           'av01',
+    'VP9':           'vp9',
+    'No preference': None
+}
+
+# STATUS = Building complete for now
+def build_format_string(video_res: str, codec: str, audio_ok: bool, fallback_ok: bool) -> str:
+    # This Function is made for coversion that converts human readable info ytdlp suitable format.
+    # Handling audio only
+    if video_res == 'audio only':
+        return 'bestaudio/best'
+    
+    # get height
+    height = RESOLUTION_TO_HEIGHT.get(video_res)
+    if height is None:
+        return 'bestvideo+bestaudio/best' # Its Safer than sorry
+    
+    # get codec
+    codec_code = CODEC_TO_YTDLP.get(codec)
+    if codec_code is None:
+        video_part = f'bestvideo[height<={height}]'
+    else:
+        video_part = f'bestvideo[height<={height}][vcodec^={codec_code}]'
+
+    # audio contion
+    if audio_ok:
+        format_string = f'{video_part}+bestaudio'
+    else:
+        format_string = video_part
+
+    # add fallback if allowed
+    if fallback_ok:
+        format_string = f"{format_string}/best"
+
+    return format_string
 
 
 # Data Simplifications
 def simplify_resolution(resolution: str) -> str:
+
+    # RESOLUTION_TO_HEIGHT = {
+    #     '144p': 144,
+    #     '720p': 720,
+    #     '1080p': 1080
+    # }
+    # height = RESOLUTION_TO_HEIGHT.get(profile['video_resolution'])
+    # format_string = f"bestvideo[height<={height}]+bestaudio/best"
 
     # siplified = {
     #     "audio only" : resolution,
@@ -82,6 +161,7 @@ def format_filesize(bytes: int) -> str:
 
 
 
+
 # Real functions
 def get_formats(url: str):
     try:
@@ -133,9 +213,10 @@ def parse_formats(formats):
 """
 # downloading functions
 
-def download(url, format_id, download_folder):
+def download(url, profile, download_folder):
     ydl_opts = {
-    'format': format_id,
+    'format': profile['format'],
+    'merge_output_format': profile.get('merge_format', 'mp4'),
     'outtmpl': str(Path(download_folder) / "%(title)s.%(ext)s"),
     'quiet': True,
     'noprogress' : True,
@@ -152,8 +233,6 @@ def download(url, format_id, download_folder):
 def progress_hook(download_status):
     if download_status['status'] == 'downloading':
         percentage_str = download_status.get('_percent_str', '?')
-        # percentage_int = int(float(percentage_str.strip().replace('%', '')))
-        # outof20 = 20*percentage_int
         speed = download_status.get('_speed_str', '?')
         eta = download_status.get('_eta_str', '?')
         filename = download_status.get('filename','video.mp4')
@@ -162,17 +241,22 @@ def progress_hook(download_status):
         print(f"{percentage_str} | {speed} | ETA: {eta}", " "*10, end= "\r")
 
     elif download_status['status'] == 'finished':
-        print("Download complete!", " "*20)
+        print("Processing...", " "*20)  # more accurate — merging happens after
     
 if __name__ == "__main__":
-    url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" # Rick-Roll Video's link
-    formats = get_formats(url=url)
-    data = parse_formats(formats=formats)
-    display.display_formats_table(formats=data)
-    format_id = input("Enter id: ").strip()
-    download_folder = str(DOWNLOAD_DIR)
-    download(url=url, format_id=format_id, download_folder=download_folder)
+    # url="https://www.youtube.com/watch?v=CNDBIFpOCVI" # Rick-Roll Video's link
+    # formats = get_formats(url=url)
+    # data = parse_formats(formats=formats)
+    # display.display_formats_table(formats=data)
+    # format_id = input("Enter id: ").strip()
+    # download_folder = str(DOWNLOAD_DIR)
+    # download(url=url, profile= BUILTIN_PRESETS['best'], download_folder=download_folder)
+    # print(build_format_string("1080p", "H.264", True, True))
+    # print(build_format_string('audio only', None, True, True))
+    # print(build_format_string('720p', 'No preference', True, False))
+    print(build_format_string('1080p', 'AV1', False, True))
+    # print(build_format_string('2160p', 'VP9', True, True))
 
 
 # if user = "GUEST" skip all data based works like profiles
-# For only youtube video and watchlist is available not for other platforms
+# For only youtube video and watchlist is available not for other platforms.
