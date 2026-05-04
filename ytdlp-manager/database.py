@@ -184,11 +184,26 @@ def get_profiles(username: str) -> dict:
         return profiles
 
 
-def get_settings_data(username):
-    # TODO: fetch from settings when settings module is built
-    user_setting = None
-    return None # For now
-    ...
+def get_settings_data(username: str, key: str):
+    with sqlite3.connect(DB_PATH) as db:
+        cursor = db.cursor()
+        cursor.execute(
+            """
+                SELECT settings.*
+                FROM settings
+                JOIN users_table ON settings.user_id = users_table.id
+                WHERE users_table.username = ?
+            """,
+            (username,)
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return None
+        columns = [desc[0] for desc in cursor.description]
+        settings_dict = dict(zip(columns, row))
+        return settings_dict.get(key)
+
+
 
 if __name__ == "__main__":
     initialize_db()

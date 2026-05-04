@@ -14,7 +14,7 @@ def display_logo() -> None:
     │  │  │_   _│    ╲│  │  │  _  │___│     │  _  │   │ │  _  │   __│   __│ __  │      
     │_   _│ │ │ │  │  │  │__│   __│___│ │ │ │     │ │ │ │     │  │  │   __│    ─│      
       │_│   │_│ │____╱│_____│__│      │_│_│_│__│__│_│___│__│__│_____│_____│__│__│       
-                                                                      version 0.56          
+                                                                      version 0.57          
 =====================================================================================
 """
             )
@@ -50,29 +50,39 @@ def loading_animation(message: str, duration: float) -> None:
     print(message, " Done!")
 
     
-def display_formats_table(formats):
+def display_formats_table(formats: list):
     print(tabulate(formats, headers="keys", tablefmt='simple'))
 
-
-"""
-    options = {
-        '1': 'Menu Option 1',
-        '2': 'Menu Option 2',
-        '3': 'Menu Option 3',
-        '4': 'Menu Option 4',
-        '0': 'Back'
-    }
-
-    follow the above mentioned dict structure to use print_menu module
-"""
+def progress_bar(percentage: float, width: int = 30) -> str:
+    percentage = max(0, min(100, percentage))
+    filled = int(width * percentage / 100)
+    bar = '=' * filled + ' ' * (width - filled)
+    return f'[{bar}]'
 
 def print_menu(title: str, options: dict):
+    
+    """
+        options = {
+            '1': 'Menu Option 1',
+            '2': 'Menu Option 2',
+            '3': 'Menu Option 3',
+            '4': 'Menu Option 4',
+            .
+            .
+            .
+            '0': 'Back'
+        }
+
+        follow the above mentioned dict structure to use print_menu module
+    """
+
     print(title)
-    for key, value in options.items():
-        if key != '0':
-            print(f"{key}. {value}")
-    if '0' in options:
-        print(f"0. {options['0']}")
+    if options:
+        for key, value in options.items():
+            if key != '0':
+                print(f"{key}. {value}")
+        if '0' in options:
+            print(f"0. {options['0']}")
 
 if __name__ == "__main__":
     clear_screen()

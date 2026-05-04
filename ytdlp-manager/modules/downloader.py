@@ -1,11 +1,16 @@
 import yt_dlp
-# import display
-# from modules import display
+import os
+import time
+
+from modules import display, build_format_string
 from pathlib import Path
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-DOWNLOAD_DIR = Path(__file__).resolve().parent.parent /'Downloads'
+DOWNLOAD_DIR = BASE_DIR /'Downloads'
+
+COOKIE_DIR = BASE_DIR / 'Cookies' # TODO Later we will make it divided by user, dynamic path got by another place
 
 BUILTIN_PRESETS = {
     'best': {
@@ -25,169 +30,7 @@ BUILTIN_PRESETS = {
     }
 }
 
-RESOLUTION_TO_HEIGHT = {
-    'audio only': None,
-    '144p':  144,
-    '240p':  240,
-    '360p':  360,
-    '480p':  480,
-    '720p':  720,
-    '1080p': 1080,
-    '1440p': 1440,
-    '2160p': 2160,
-    '4320p': 4320
-    }
-
-CODEC_TO_YTDLP = {
-    'H.264':         'avc1',
-    'H.265':         'hev1',
-    'AV1':           'av01',
-    'VP9':           'vp9',
-    'No preference': None
-}
-
-# STATUS = Building complete for now
-def build_format_string(video_res: str, codec: str, audio_ok: bool, fallback_ok: bool) -> str:
-    # This Function is made for coversion that converts human readable info ytdlp suitable format.
-    # Handling audio only
-    if video_res == 'audio only':
-        return 'bestaudio/best'
-    
-    # get height
-    height = RESOLUTION_TO_HEIGHT.get(video_res)
-    if height is None:
-        return 'bestvideo+bestaudio/best' # Its Safer than sorry
-    
-    # get codec
-    codec_code = CODEC_TO_YTDLP.get(codec)
-    if codec_code is None:
-        video_part = f'bestvideo[height<={height}]'
-    else:
-        video_part = f'bestvideo[height<={height}][vcodec^={codec_code}]'
-
-    # audio contion
-    if audio_ok:
-        format_string = f'{video_part}+bestaudio'
-    else:
-        format_string = video_part
-
-    # add fallback if allowed
-    if fallback_ok:
-        format_string = f"{format_string}/best"
-
-    return format_string
-
-
-# Data Simplifications
-def simplify_resolution(resolution: str) -> str:
-
-    # RESOLUTION_TO_HEIGHT = {
-    #     '144p': 144,
-    #     '720p': 720,
-    #     '1080p': 1080
-    # }
-    # height = RESOLUTION_TO_HEIGHT.get(profile['video_resolution'])
-    # format_string = f"bestvideo[height<={height}]+bestaudio/best"
-
-    # siplified = {
-    #     "audio only" : resolution,
-    #     "256x144" : "144P",
-    #     "426x240" : "240P",
-    #     "640x360" : "360P",
-    #     "854x480" : "480P (SD)",
-    #     "1280x720": "720P (HD)",
-    #     "1920x1080": "1080P (FHD)",
-    #     "2560x1440": "1440P (QHD)",
-    #     "3840x2160": "2160P (4K)",
-    #     "7680x4320": "4320P (8K)"
-
-    # }
-
-    match resolution:
-        case "audio only":
-            return "audio only"
-        case "256x144":
-            return "144P"
-        case "426x240":
-            return "240P"
-        case "640x360":
-            return "360P"
-        case "854x480":
-            return "480P (SD)"
-        case "1280x720":
-            return "720P (HD)"
-        case "1920x1080":
-            return "1080P (FHD)"
-        case "2560x1440":
-            return "1440P (QHD)"
-        case "3840x2160":
-            return "2160P (4K)"
-        case "7680x4320":
-            return "4320P (8K)"
-        case _:
-            return resolution  # show raw if unknown
-
-def simplify_codec(codec: str) -> str:
-    if codec is None or codec == 'none':
-        return 'none'
-    if 'avc' in codec:
-        return 'H.264'
-    if 'hev' in codec or 'hvc' in codec:
-        return 'H.265'
-    if 'av01' in codec:
-        return 'AV1'
-    if 'vp9' in codec:
-        return 'VP9'
-    if 'mp4a' in codec:
-        return 'AAC'
-    if 'opus' in codec:
-        return 'Opus'
-    return codec  # fallback: show raw if unknown
-
-def format_filesize(bytes: int) -> str:
-    if bytes == None:
-        return "Unknown"
-    elif bytes >= 1024**3:
-        gb = bytes/(1024**3)
-        return f"~ {gb:.2f} GB"
-    elif bytes >= 1024**2:
-        mb = bytes/(1024**2)
-        return f"~ {mb:.2f} MB"
-    elif bytes >= 1024:
-        kb = bytes/1024
-        return f"~ {kb:.2f} KB"
-    else:
-        return f"~ {bytes} Bytes"
-
-
-
-
-# Real functions
-def get_formats(url: str):
-    try:
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
-            info = ydl.extract_info(url, download=False)
-            return info.get('formats', [])
-    except yt_dlp.utils.DownloadError as e:
-        print(f"Failed to fetch formats: {e}")
-        return None
-        
-def parse_formats(formats):
-    cleaned_formats= []
-    for f in formats:
-        if f.get('ext') == 'mhtml':
-            continue
-        cleaned_formats.append({
-            'FORMAT_ID': f.get('format_id'),
-            'EXT':       f.get('ext'),
-            'RESOLUTION': simplify_resolution(f.get('resolution')),
-            'ACODEC':    simplify_codec(f.get('acodec')),
-            'VCODEC':    simplify_codec(f.get('vcodec')),
-            'FILESIZE':  format_filesize(f.get('filesize'))
-        })
-
-    return cleaned_formats
-
+last_update = 0
 
 """
     What download_status is
@@ -211,38 +54,125 @@ def parse_formats(formats):
             'filename': 'video.mp4'
         }
 """
-# downloading functions
 
+# downloading functions
 def download(url, profile, download_folder):
+    cookie_path = Path(COOKIE_DIR) / 'cookies.txt'
+    # TODO make cookie file inputable and conditional
     ydl_opts = {
     'format': profile['format'],
     'merge_output_format': profile.get('merge_format', 'mp4'),
     'outtmpl': str(Path(download_folder) / "%(title)s.%(ext)s"),
     'quiet': True,
+    'no_warnings': False,
     'noprogress' : True,
     'progress_hooks': [progress_hook]
     }
 
+    if cookie_path.exists():
+        ydl_opts['cookiefile'] = str(cookie_path)
+
+    print(f"Downloading to: {download_folder}")
+    
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        return (True, "Download successful")
+            info = ydl.extract_info(url= url, download= False)
+            filename_full = ydl.prepare_filename(info)
+            print(f"\n[DOWNLAODING...]: '{filename_full}'")
+
+            # replace download() with process_info() but thats need restructuring.
+            ydl.process_info(info) 
+        #TODO: Return download folder when its multiple videos
+        return (True, "Download successful", filename_full)
     except yt_dlp.utils.DownloadError as e:
-        return (False, f"Download failed: {e}")
+        return (False, f"Download failed: {e}", None)
+
 
 def progress_hook(download_status):
-    if download_status['status'] == 'downloading':
-        percentage_str = download_status.get('_percent_str', '?')
-        speed = download_status.get('_speed_str', '?')
-        eta = download_status.get('_eta_str', '?')
-        filename = download_status.get('filename','video.mp4')
-        # later we will send all these values to ui to print using display module
-        # For now we are printing here
-        print(f"{percentage_str} | {speed} | ETA: {eta}", " "*10, end= "\r")
 
-    elif download_status['status'] == 'finished':
-        print("Processing...", " "*20)  # more accurate — merging happens after
+    global last_update
+    filename_full = os.path.basename(download_status.get('filename', "FileName"))
     
+    def truncate(string: str, max_length: int) -> str:
+        if len(string) <= max_length:
+            return string
+        return string[:max_length - 3] + "..."
+    
+
+    def progress_barNpercentage(downloaded_size: float, total_size: float, width: int) -> str:
+        portion = downloaded_size/total_size
+        filled = int(width * portion)
+        percentage_float = (downloaded_size/total_size) * 100
+        not_filled = width - filled
+        bar = "#" * filled + "-" * not_filled
+        return f":> [{bar}] {percentage_float:.2f}%"
+        # [#########---------------------]
+
+
+    def seconds_to_hms_str(seconds: int | float) -> str:
+        seconds = int(seconds or 0)
+
+        h = seconds // 3600
+        m = (seconds % 3600) // 60
+        s = seconds % 60
+
+        if h > 0:
+            return f"{h}:{m:02d}:{s:02d}"
+        elif (h == 0) and (m > 0):
+            return f"{m:02d}:{s:02d}"
+        else:
+            return f"{s:02d} secs"
+
+
+    """
+status: the downloading status
+info_dict:
+filename: the name of the file is available
+tmpfilename: the temporary file name
+downloaded_bytes: Bytes on disk
+total_bytes: Total size of files
+total_bytes_estimate: Total estimated size 
+elapsed: The number of seconds since download started.
+eta: The estimated time in seconds, None if unknown
+speed: The download speed in bytes/second, None if unknown
+fragment_index: The counter of the currently downloaded video fragment.
+fragment_count: The number of fragments (= individual files that will be merged)
+noprogress: Do not print the progress bar
+    """
+    
+    
+    if download_status['status'] == 'downloading':
+
+        now = time.time()
+        if now - last_update < 0.1:  # update every 100ms max
+            return
+        last_update = now
+
+        # filename = truncate(filename_full, 25)
+        downloaded_bytes = (download_status.get('downloaded_bytes', 0))/(1024*1024)
+        total_bytes = (download_status.get('total_bytes') or 0)/(1024*1024)
+        elapsed = download_status.get('elapsed') or 0
+        elapsed_str = seconds_to_hms_str(seconds= elapsed)
+        eta = download_status.get('eta') or 0
+        eta_str = seconds_to_hms_str(seconds= eta)
+        speed = (download_status.get('speed') or 0)/(1024*1024) # in MB
+        speed_str = f"{speed:.2f} MB/s"
+        progress_bar_percentage = progress_barNpercentage(downloaded_size= downloaded_bytes, total_size= total_bytes, width= 30)
+
+        
+        # TODO: Make conditional MB, GB etc.
+        print(f"\r{progress_bar_percentage} | {downloaded_bytes:.2f}/{total_bytes:.2f} MB | Elapsed: {elapsed_str} | ETA: {eta_str} | ↓: {speed_str}", " "*20, end= " ", flush= True)
+        
+    elif download_status['status'] == 'finished':
+        print("\nProcessing...", " "*20)  # more accurate — merging happens after
+        # TODO: later we will send all these values to ui to print using display module
+        # For now we are printing here
+    
+    elif download_status['status'] == 'error':
+        print(f"\nError during download")
+
+
 if __name__ == "__main__":
     # url="https://www.youtube.com/watch?v=CNDBIFpOCVI" # Rick-Roll Video's link
     # formats = get_formats(url=url)
@@ -254,9 +184,9 @@ if __name__ == "__main__":
     # print(build_format_string("1080p", "H.264", True, True))
     # print(build_format_string('audio only', None, True, True))
     # print(build_format_string('720p', 'No preference', True, False))
-    print(build_format_string('1080p', 'AV1', False, True))
+    print(build_format_string.build_format_string('1080p', 'AV1', False, True))
     # print(build_format_string('2160p', 'VP9', True, True))
 
 
-# if user = "GUEST" skip all data based works like profiles
-# For only youtube video and watchlist is available not for other platforms.
+# TODO: if user = "GUEST" skip all data based works like profiles
+# TODO: For only youtube video and watchlist is available not for other platforms.
