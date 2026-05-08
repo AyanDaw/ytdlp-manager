@@ -33,7 +33,7 @@ def get_download_path(user):
     print("\nType 'BACK' to Go Back...")
     while True:        
         print("\nO(∩_∩)O Press \'ENTER\' to Leave the Download-Path as Default as it is set in your settings")
-        download_path = (input("Enter your Download-Path:> ")).strip()
+        download_path = (input("Enter your Download-Path:> ")).strip().strip('"').strip("'")
         if download_path == 'BACK':
             return 'BACK'
         if download_path != "":
