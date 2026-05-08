@@ -12,7 +12,10 @@ COOKIE_DIR = BASE_DIR / 'Cookies' # TODO Later we will make it divided by user, 
 def get_formats(url: str) -> list:
 
     try:
-        opts = {'quiet': True}
+        opts = {
+            'quiet': True,
+            'remote_components': {'ejs:github'}
+        }
         if COOKIE_DIR.exists():
             cookie_file = COOKIE_DIR / 'cookies.txt'
             if cookie_file.exists():
@@ -20,9 +23,18 @@ def get_formats(url: str) -> list:
         # TODO make it conditional
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
+            if info.get('_type') == 'playlist':
+                print("Playlist URLs are not supported in Custom Download. Please enter a single video URL.")
+                return None
             return info.get('formats', [])
     except yt_dlp.utils.DownloadError as e:
-        print(f"Failed to fetch formats: {e}")
+        error_str = str(e).lower()
+        if "sign in" in error_str or "age" in error_str:
+            print("This video requires login or age verification.")
+        elif "not available" in error_str:
+            print("This video is unavailable — may be region-locked or Kids content.")
+        else:
+            print(f"Could not fetch formats: {e}")
         return None
     
 def parse_formats(formats: list) -> list:
