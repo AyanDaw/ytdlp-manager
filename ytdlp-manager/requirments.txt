@@ -1,7 +1,8 @@
-yt-dlp
+yt-dlp[default]
 tabulate
 python 3.10+
 using python 3.12
+colorama
 
 needs to install deno
 winget install DenoLand.Deno
