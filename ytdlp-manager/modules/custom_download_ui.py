@@ -36,7 +36,7 @@ def custom_download(user):
             return
         formats = fetcherNparser.get_formats(url=url)
         if formats is None:
-            print("Failed to fetch formats. Check your URL and connection.")
+            # print("Failed to fetch formats. Check your URL and connection.")
             input("Press Enter to try again...")
             continue
         cleaned_formats = fetcherNparser.parse_formats(formats=formats)
@@ -114,6 +114,10 @@ What are you downloading?
             else:
                 exit_ok = input("Want to exit the App? [Y/n]:> ")
                 if exit_ok.strip().lower() in ('y', 'yes', ''):
+                    display.clear_screen()
+                    display.display_logo()
+                    display.loading_animation(message= "Exiting...", duration= 1)
+                    print("\nHave a good day!... :)")
                     sys.exit()
             
         input("Press Enter to continue...")
