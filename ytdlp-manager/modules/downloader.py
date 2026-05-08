@@ -62,8 +62,16 @@ def download(url, profile, download_folder):
     ydl_opts = {
     'format': profile['format'],
     'merge_output_format': profile.get('merge_format', 'mp4'),
+    # TODO Make condition for playlist
     'outtmpl': str(Path(download_folder) / "%(title)s.%(ext)s"),
     'quiet': True,
+    'lazy_playlist': True,
+    'sleep_interval': 3,
+    'max_sleep_interval': 6,
+    'sleep_interval_requests': 1,
+    # 'ignoreerrors': True, # TODO, this also conditioned with playlist
+    'remote_components': {'ejs:github'},
+    # 'extractor_args': {'youtube': {'player_client': ['android_vr']}}, TODO
     'no_warnings': False,
     'noprogress' : True,
     'progress_hooks': [progress_hook]
@@ -144,10 +152,10 @@ noprogress: Do not print the progress bar
     
     if download_status['status'] == 'downloading':
 
-        now = time.time()
-        if now - last_update < 0.1:  # update every 100ms max
-            return
-        last_update = now
+        # now = time.time()
+        # if now - last_update < 0.1:  # update every 100ms max
+        #     return
+        # last_update = now
 
         # filename = truncate(filename_full, 25)
         downloaded_bytes = (download_status.get('downloaded_bytes', 0))/(1024*1024)
@@ -165,6 +173,17 @@ noprogress: Do not print the progress bar
         print(f"\r{progress_bar_percentage} | {downloaded_bytes:.2f}/{total_bytes:.2f} MB | Elapsed: {elapsed_str} | ETA: {eta_str} | ↓: {speed_str}", " "*20, end= " ", flush= True)
         
     elif download_status['status'] == 'finished':
+        downloaded_bytes = (download_status.get('downloaded_bytes', 0))/(1024*1024)
+        total_bytes = (download_status.get('total_bytes') or 0)/(1024*1024)
+        elapsed = download_status.get('elapsed') or 0
+        elapsed_str = seconds_to_hms_str(seconds= elapsed)
+        eta = download_status.get('eta') or 0
+        eta_str = seconds_to_hms_str(seconds= eta)
+        speed = (download_status.get('speed') or 0)/(1024*1024) # in MB
+        speed_str = f"{speed:.2f} MB/s"
+        progress_bar_percentage = progress_barNpercentage(downloaded_size= downloaded_bytes, total_size= total_bytes, width= 30)
+
+        print(f"\r{progress_bar_percentage} | {downloaded_bytes:.2f}/{total_bytes:.2f} MB | Elapsed: {elapsed_str} | ETA: {eta_str} | ↓: {speed_str}", " "*20)
         print("\nProcessing...", " "*20)  # more accurate — merging happens after
         # TODO: later we will send all these values to ui to print using display module
         # For now we are printing here
