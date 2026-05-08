@@ -64,7 +64,6 @@ def quick_download(user):
         if download_path == 'BACK':
             return
         
-        print(f"Downloading to: {download_path}")
         result = downloader.download(url= url, profile= download_format, download_folder= download_path)
 
         print(result[1])
@@ -75,6 +74,10 @@ def quick_download(user):
             else:
                 exit_ok = input("Want to exit the App? [Y/n]:> ")
                 if exit_ok.strip().lower() in ('y', 'yes', ''):
+                    display.clear_screen()
+                    display.display_logo()
+                    display.loading_animation(message= "Exiting...", duration= 1)
+                    print("\nHave a good day!... :)")
                     sys.exit()
     
         input("Press Enter to continue...")
